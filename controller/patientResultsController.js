@@ -122,3 +122,20 @@ exports.addResultsToPatient = async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+
+exports.resetPatientResults = async (req, res) => {
+  try {
+    const patient = await Patient.findById(req.params.id);
+    if (!patient) return res.status(404).json({ message: "Patient not found" });
+
+    patient.results = [];
+    patient.resultStatus = "Pending";
+    patient.resultAddedBy = null; // Optional: clear who added
+    await patient.save();
+
+    res.json({ message: "Results reset successfully", patient });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

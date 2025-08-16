@@ -4,12 +4,15 @@ const {
   getPendingPatients,
   getPatientTestsWithFields,
   addResultsToPatient,
-  getAddedPatients
+  getAddedPatients,
+  resetPatientResults
 } = require("../controller/patientResultsController");
 
 router.get("/pending", getPendingPatients);
 router.get("/added", getAddedPatients);
 router.get("/:id/tests", getPatientTestsWithFields);
 router.patch("/:id/results", addResultsToPatient);
+router.patch("/:id/reset", resetPatientResults);
+
 
 module.exports = router;
