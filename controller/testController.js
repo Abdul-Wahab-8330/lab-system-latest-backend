@@ -2,13 +2,13 @@ const TestTemplate = require('../models/TestTemplate');
 const createDynamicModel = require('../utils/dynamicModel');
 
 const CreateTestTemplate = async (req, res) => {
-  const { testName,testPrice, fields } = req.body;
+  const { testName, testPrice, category, fields } = req.body;
 
   try {
     const existing = await TestTemplate.findOne({ testName });
     if (existing) return res.status(400).json({ message: 'Test already exists' });
 
-    const savedSchema = new TestTemplate({ testName,testPrice, fields });
+    const savedSchema = new TestTemplate({ testName, testPrice, category, fields });
     await savedSchema.save();
 
     // createDynamicModel(testName, fields); // create the model dynamically

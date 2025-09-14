@@ -18,6 +18,11 @@ const TestTemplateSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  category: {
+    type: String,
+    required: true,
+  },
+
   fields: [FieldSchema],
 }, { timestamps: true });
 
