@@ -18,7 +18,7 @@ async function generateRefNo() {
 
 const createPatient = async (req, res) => {
   try {
-    const { name, age, gender, phone, paymentStatus, paymentStatusUpdatedBy , patientRegisteredBy , referencedBy, selectedTests, resultStatus } = req.body;
+    const { name, age, gender, phone, paymentStatus, paymentStatusUpdatedBy, patientRegisteredBy, referencedBy, selectedTests, resultStatus } = req.body;
     // validation (basic)
     if (!name || !age || !gender || !phone) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -72,6 +72,10 @@ const createPatient = async (req, res) => {
 const getPatients = async (req, res) => {
   try {
     const patients = await Patient.find()
+      .populate({
+        path: 'tests.testId',
+        model: 'TestTemplate'
+      });
     res.json(patients);
   } catch (err) {
     console.error("getPatients err:", err);
@@ -85,11 +89,14 @@ const searchPatients = async (req, res) => {
   try {
     const { q } = req.query;
     console.log('Search query:', q); // Debug log
-    
+
     const patients = await Patient.find({
-      name: { $regex: q, $options: 'i' }
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { phone: { $regex: q, $options: 'i' } }
+      ]
     }).select('name age phone gender referencedBy').limit(10);
-    
+
     console.log('Found patients:', patients.length); // Debug log
     res.json(patients);
   } catch (error) {
@@ -101,18 +108,19 @@ const searchPatients = async (req, res) => {
 
 const deletePatients = async (req, res) => {
   try {
-    const {id} = req.params;
+    const { id } = req.params;
     const patient = await Patient.findByIdAndDelete(id)
-    if(!patient){
+    if (!patient) {
       res.status(404).json({
-        success:false,
-        message:'patient not found'
-      })}
+        success: false,
+        message: 'patient not found'
+      })
+    }
     res.json({
       success: true,
       message: 'Patient deleted successfully'
     })
-    
+
   } catch (err) {
     console.error("delete patient err:", err);
     res.status(500).json({ error: "Server error" });
@@ -140,10 +148,10 @@ const updatePaymentStatus = async (req, res) => {
       return res.status(404).json({ message: "Patient not found" });
     }
 
-    res.json({success:true, updatedPatient});
+    res.json({ success: true, updatedPatient });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = {getPatients, createPatient, searchPatients, updatePaymentStatus, deletePatients}
+module.exports = { getPatients, createPatient, searchPatients, updatePaymentStatus, deletePatients }

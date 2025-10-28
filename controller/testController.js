@@ -2,13 +2,13 @@ const TestTemplate = require('../models/TestTemplate');
 const createDynamicModel = require('../utils/dynamicModel');
 
 const CreateTestTemplate = async (req, res) => {
-  const { testName, testPrice, category, fields } = req.body;
-
+const { testCode, testName, testPrice, category, specimen, performed, reported, fields } = req.body;
   try {
-    const existing = await TestTemplate.findOne({ testName });
-    if (existing) return res.status(400).json({ message: 'Test already exists' });
+const existing = await TestTemplate.findOne({ $or: [{ testName }, { testCode }] });
 
-    const savedSchema = new TestTemplate({ testName, testPrice, category, fields });
+if (existing) return res.status(400).json({ message: 'Test already exists' });
+
+const savedSchema = new TestTemplate({ testCode, testName, testPrice, category, specimen, performed, reported, fields });
     await savedSchema.save();
 
     // createDynamicModel(testName, fields); // create the model dynamically
@@ -47,8 +47,8 @@ const deleteTest = async (req, res) => {
 const updateTest = async (req, res) => {
   try {
     const { id } = req.params;
-    const { testName,testPrice, fields } = req.body;
-    const updated = await TestTemplate.findByIdAndUpdate(id, { testName,testPrice, fields }, { new: true });
+    const { testCode, testName, testPrice, category, specimen, performed, reported, fields } = req.body;
+    const updated = await TestTemplate.findByIdAndUpdate(id, { testCode, testName, testPrice, category, specimen, performed, reported, fields }, { new: true });
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: error.message });
