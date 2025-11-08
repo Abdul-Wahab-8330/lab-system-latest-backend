@@ -5,15 +5,35 @@ const mongoose = require("mongoose");
 
 // Generate unique 6-digit ref no (atomic)
 async function generateRefNo() {
-  // findOneAndUpdate with upsert to increment atomically
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const year = String(today.getFullYear()).slice(-2);
+  const yearKey = today.getFullYear();
+
   const counter = await RefCounter.findOneAndUpdate(
-    { name: "patient_ref" },
+    { name: `patient_ref_${yearKey}` },
     { $inc: { seq: 1 } },
     { new: true, upsert: true }
   );
-  // Ensure 6 digits — pad if necessary
-  const number = String(counter.seq).padStart(6, "0");
-  return number;
+
+  const number = String(counter.seq).padStart(4, "0");
+  return `${number}-${month}-${year}`;
+}
+
+async function generateCaseNo() {
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, "0");
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const dateKey = `${today.getFullYear()}-${month}-${day}`;
+
+  const counter = await RefCounter.findOneAndUpdate(
+    { name: `case_ref_${dateKey}` },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+
+  const caseNumber = 9100 + counter.seq;
+  return `${caseNumber}-${day}-${month}`;
 }
 
 const createPatient = async (req, res) => {
@@ -45,9 +65,11 @@ const createPatient = async (req, res) => {
 
     // generate refNo
     const refNo = await generateRefNo();
+    const caseNo = await generateCaseNo();
 
     const patient = new Patient({
       refNo,
+      caseNo,
       name,
       age,
       gender,
@@ -92,10 +114,12 @@ const searchPatients = async (req, res) => {
 
     const patients = await Patient.find({
       $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { phone: { $regex: q, $options: 'i' } }
-      ]
-    }).select('name age phone gender referencedBy').limit(10);
+  { name: { $regex: q, $options: 'i' } },
+  { phone: { $regex: q, $options: 'i' } },
+  { refNo: { $regex: q, $options: 'i' } },
+  { caseNo: { $regex: q, $options: 'i' } }
+]
+    }).select('name age phone gender referencedBy refNo caseNo')
 
     console.log('Found patients:', patients.length); // Debug log
     res.json(patients);

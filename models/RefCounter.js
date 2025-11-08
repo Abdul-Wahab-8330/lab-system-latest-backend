@@ -1,9 +1,15 @@
-// models/RefCounter.js
 const mongoose = require("mongoose");
 
 const RefCounterSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }, // e.g. "patient_ref"
-  seq: { type: Number, default: 100000 } // start at 100000 -> 6 digits
+  name: { 
+    type: String, 
+    required: true, 
+    unique: true 
+  }, // e.g. "patient_ref_2025" or "case_ref_2025-11-08"
+  seq: { 
+    type: Number, 
+    default: 0 
+  } // starts at 0, will increment to 1, 2, 3...
 });
 
 module.exports = mongoose.model("RefCounter", RefCounterSchema);
