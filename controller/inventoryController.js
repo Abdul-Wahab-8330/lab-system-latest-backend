@@ -312,13 +312,16 @@ const getStockLevelsWithTotals = async (req, res) => {
 };
 
 // Get daily summary (additions and issues per day)
+// Get daily summary with item-wise breakdown
 const getDailySummary = async (req, res) => {
   try {
     const dailySummary = await InventoryTransaction.aggregate([
       {
         $group: {
           _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$date' }
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+            itemId: '$itemId',
+            itemName: '$itemName'
           },
           totalAdditions: {
             $sum: {
@@ -334,13 +337,32 @@ const getDailySummary = async (req, res) => {
         }
       },
       {
+        $group: {
+          _id: '$_id.date',
+          items: {
+            $push: {
+              itemId: '$_id.itemId',
+              itemName: '$_id.itemName',
+              totalAdditions: '$totalAdditions',
+              totalIssues: '$totalIssues',
+              transactionCount: '$transactionCount',
+              netChange: { $subtract: ['$totalAdditions', '$totalIssues'] }
+            }
+          },
+          dayTotalAdditions: { $sum: '$totalAdditions' },
+          dayTotalIssues: { $sum: '$totalIssues' },
+          dayTransactionCount: { $sum: '$transactionCount' }
+        }
+      },
+      {
         $project: {
           _id: 0,
           date: '$_id',
-          totalAdditions: 1,
-          totalIssues: 1,
-          netChange: { $subtract: ['$totalAdditions', '$totalIssues'] },
-          transactionCount: 1
+          items: 1,
+          dayTotalAdditions: 1,
+          dayTotalIssues: 1,
+          dayNetChange: { $subtract: ['$dayTotalAdditions', '$dayTotalIssues'] },
+          dayTransactionCount: 1
         }
       },
       {
