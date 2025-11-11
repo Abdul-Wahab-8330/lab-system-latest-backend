@@ -265,6 +265,102 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
+
+// Get stock levels with total additions and issues per item
+const getStockLevelsWithTotals = async (req, res) => {
+  try {
+    const items = await InventoryItem.find({});
+
+    const stockLevelsWithTotals = await Promise.all(
+      items.map(async (item) => {
+        const mongoose = require('mongoose');
+        const objectId = new mongoose.Types.ObjectId(item._id);
+
+        // Get total additions
+        const additions = await InventoryTransaction.aggregate([
+          { $match: { itemId: objectId, transactionType: 'addition' } },
+          { $group: { _id: null, total: { $sum: '$quantity' } } }
+        ]);
+
+        // Get total removals
+        const removals = await InventoryTransaction.aggregate([
+          { $match: { itemId: objectId, transactionType: 'removal' } },
+          { $group: { _id: null, total: { $sum: '$quantity' } } }
+        ]);
+
+        const totalAdditions = additions.length > 0 ? additions[0].total : 0;
+        const totalIssues = removals.length > 0 ? removals[0].total : 0;
+        const currentStock = totalAdditions - totalIssues;
+
+        return {
+          itemId: item._id,
+          itemIdCode: item.itemId,
+          itemName: item.itemName,
+          description: item.description,
+          currentStock,
+          totalAdditions,
+          totalIssues
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, stockLevels: stockLevelsWithTotals });
+  } catch (error) {
+    console.error('getStockLevelsWithTotals error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get daily summary (additions and issues per day)
+const getDailySummary = async (req, res) => {
+  try {
+    const dailySummary = await InventoryTransaction.aggregate([
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$date' }
+          },
+          totalAdditions: {
+            $sum: {
+              $cond: [{ $eq: ['$transactionType', 'addition'] }, '$quantity', 0]
+            }
+          },
+          totalIssues: {
+            $sum: {
+              $cond: [{ $eq: ['$transactionType', 'removal'] }, '$quantity', 0]
+            }
+          },
+          transactionCount: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          date: '$_id',
+          totalAdditions: 1,
+          totalIssues: 1,
+          netChange: { $subtract: ['$totalAdditions', '$totalIssues'] },
+          transactionCount: 1
+        }
+      },
+      {
+        $sort: { date: -1 }
+      },
+      {
+        $limit: 90  // Last 90 days
+      }
+    ]);
+
+    res.status(200).json({ success: true, dailySummary });
+  } catch (error) {
+    console.error('getDailySummary error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+
 module.exports = {
   // Items
   createItem,
@@ -277,5 +373,8 @@ module.exports = {
   getAllTransactions,
   getTransactionsByDateRange,
   getCurrentStock,
-  deleteTransaction
+  deleteTransaction,
+
+  getStockLevelsWithTotals,
+  getDailySummary
 };

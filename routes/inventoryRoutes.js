@@ -10,7 +10,9 @@ const {
   getAllTransactions,
   getTransactionsByDateRange,
   getCurrentStock,
-  deleteTransaction
+  deleteTransaction,
+  getStockLevelsWithTotals,
+  getDailySummary
 } = require('../controller/inventoryController');
 
 // Inventory Items Routes
@@ -28,5 +30,8 @@ router.delete('/transactions/:id', deleteTransaction);
 
 // Stock Level Route
 router.get('/stock', getCurrentStock);
+
+router.get('/stock-levels-with-totals', getStockLevelsWithTotals);
+router.get('/daily-summary', getDailySummary);
 
 module.exports = router;
