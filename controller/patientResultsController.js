@@ -106,12 +106,19 @@ exports.addResultsToPatient = async (req, res) => {
 
         patient.results = existingResults;
 
-        // Check if all tests have results filled
-        const allTestsHaveResults =
-            patient.results.length === patient.tests.length &&
-            patient.results.every(r => r.fields.every(f => f.defaultValue && f.defaultValue.trim() !== ""));
+        // Check if some results are added
+        // const allTestsHaveResults =
+        //     patient.results.length === patient.tests.length &&
+        //     patient.results.every(r => r.fields.every(f => f.defaultValue && f.defaultValue.trim() !== ""));
 
-        patient.resultStatus = allTestsHaveResults ? "Added" : "Pending";
+        // patient.resultStatus = allTestsHaveResults ? "Added" : "Pending";
+        
+        const someResultsAdded = patient.results.length > 0 &&
+            patient.results.some(r =>
+                r.fields.some(f => f.defaultValue && f.defaultValue.trim() !== "")
+            );
+
+        patient.resultStatus = someResultsAdded ? "Added" : "Pending";
         patient.resultAddedBy = resultAddedBy;
 
         await patient.save();
@@ -125,17 +132,17 @@ exports.addResultsToPatient = async (req, res) => {
 
 
 exports.resetPatientResults = async (req, res) => {
-  try {
-    const patient = await Patient.findById(req.params.id);
-    if (!patient) return res.status(404).json({ message: "Patient not found" });
+    try {
+        const patient = await Patient.findById(req.params.id);
+        if (!patient) return res.status(404).json({ message: "Patient not found" });
 
-    patient.results = [];
-    patient.resultStatus = "Pending";
-    patient.resultAddedBy = null; // Optional: clear who added
-    await patient.save();
+        patient.results = [];
+        patient.resultStatus = "Pending";
+        patient.resultAddedBy = null; // Optional: clear who added
+        await patient.save();
 
-    res.json({ message: "Results reset successfully", patient });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+        res.json({ message: "Results reset successfully", patient });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
