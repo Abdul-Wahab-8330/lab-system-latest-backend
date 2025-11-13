@@ -1,5 +1,5 @@
 const TestTemplate = require('../models/TestTemplate');
-const createDynamicModel = require('../utils/dynamicModel');
+const createDynamicModel = require('../models/dynamicModel');
 
 const CreateTestTemplate = async (req, res) => {
   const { testCode, testName, testPrice, category, specimen, performed, reported, fields } = req.body;
