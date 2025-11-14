@@ -22,17 +22,22 @@ exports.getAddedPatients = async (req, res) => {
 // Get test fields for a given patient (copies from TestTemplate)
 exports.getPatientTestsWithFields = async (req, res) => {
     try {
-        const patient = await Patient.findById(req.params.id).lean();
+        const patient = await Patient.findById(req.params.id)
+            .populate({
+                path: 'tests.testId',
+                model: 'TestTemplate',
+                select: 'specimen testName testPrice fields category'
+            })
+            .lean();
         if (!patient) return res.status(404).json({ message: "Patient not found" });
 
         // Fetch fields for each test from TestTemplate, merging with any saved results
         const testsWithFields = await Promise.all(
             patient.tests.map(async (t) => {
-                const template = await TestTemplate.findById(t.testId).lean();
-
+                const template = t.testId;
                 // Find saved result for this test (if exists)
                 const savedResult = patient.results?.find(
-                    r => r.testId.toString() === t.testId.toString()
+                    r => r.testId.toString() === t.testId._id.toString()
                 );
 
                 // Merge saved values into template fields
@@ -112,7 +117,7 @@ exports.addResultsToPatient = async (req, res) => {
         //     patient.results.every(r => r.fields.every(f => f.defaultValue && f.defaultValue.trim() !== ""));
 
         // patient.resultStatus = allTestsHaveResults ? "Added" : "Pending";
-        
+
         const someResultsAdded = patient.results.length > 0 &&
             patient.results.some(r =>
                 r.fields.some(f => f.defaultValue && f.defaultValue.trim() !== "")

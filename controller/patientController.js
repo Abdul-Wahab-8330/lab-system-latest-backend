@@ -105,6 +105,26 @@ const getPatients = async (req, res) => {
   }
 };
 
+const getPatientById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const patient = await Patient.findById(id)
+      .populate({
+        path: 'tests.testId',
+        model: 'TestTemplate',
+        select: 'specimen testName testPrice' 
+      });
+    
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+    
+    res.json(patient);
+  } catch (err) {
+    console.error("getPatientById err:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 
 const searchPatients = async (req, res) => {
@@ -178,4 +198,4 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-module.exports = { getPatients, createPatient, searchPatients, updatePaymentStatus, deletePatients }
+module.exports = { getPatients, createPatient, searchPatients, updatePaymentStatus, deletePatients, getPatientById };
