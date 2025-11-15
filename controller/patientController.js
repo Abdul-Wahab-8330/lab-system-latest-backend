@@ -77,6 +77,28 @@ const createPatient = async (req, res) => {
     // total
     const total = testsForPatient.reduce((s, t) => s + (t.price || 0), 0);
 
+    // Extract discount data from request body
+    const {
+      discountPercentage = 0,
+      discountAmount = 0,
+      paidAmount = 0
+    } = req.body;
+
+    // Calculate netTotal and dueAmount
+    const netTotal = Math.max(0, total - discountAmount); // Prevent negative
+    const dueAmount = Math.max(0, netTotal - paidAmount); // Prevent negative
+
+    // Auto-correct payment status based on actual payment
+    // Auto-correct payment status based on actual payment
+    let finalPaymentStatus = paymentStatus || 'Not Paid';
+    if (paidAmount >= netTotal) {
+      finalPaymentStatus = 'Paid';
+    } else if (paidAmount > 0) {
+      finalPaymentStatus = 'Partially Paid';
+    } else {
+      finalPaymentStatus = 'Not Paid';
+    }
+
     // generate refNo
     const refNo = await generateRefNo();
     const caseNo = await generateCaseNo();
@@ -91,13 +113,18 @@ const createPatient = async (req, res) => {
       fatherHusbandName: fatherHusbandName || '',
       nicNo: nicNo || '',
       specimen: specimen || 'Taken in Lab',
-      paymentStatus: paymentStatus || 'Not Paid',
+      paymentStatus: finalPaymentStatus,
       resultStatus: resultStatus || 'Pending',
       referencedBy: referencedBy || 'Self',
       paymentStatusUpdatedBy,
       patientRegisteredBy,
       tests: testsForPatient,
-      total
+      total,
+      discountPercentage,
+      discountAmount,
+      netTotal,
+      paidAmount,
+      dueAmount
     });
 
     await patient.save();
@@ -192,16 +219,29 @@ const deletePatients = async (req, res) => {
 //Update payment status
 const updatePaymentStatus = async (req, res) => {
   const { id } = req.params;
-  const { paymentStatus, paymentStatusUpdatedBy } = req.body;
+  const { paymentStatus, paymentStatusUpdatedBy, paidAmount, dueAmount } = req.body;
 
   if (!paymentStatus || !paymentStatusUpdatedBy) {
     return res.status(400).json({ message: "Payment status and updater name required" });
   }
 
   try {
+    const updateData = {
+      paymentStatus,
+      paymentStatusUpdatedBy
+    };
+
+    // If paidAmount and dueAmount are provided, update them too
+    if (paidAmount !== undefined) {
+      updateData.paidAmount = paidAmount;
+    }
+    if (dueAmount !== undefined) {
+      updateData.dueAmount = dueAmount;
+    }
+
     const updatedPatient = await Patient.findByIdAndUpdate(
       id,
-      { paymentStatus, paymentStatusUpdatedBy },
+      updateData,
       { new: true }
     );
 

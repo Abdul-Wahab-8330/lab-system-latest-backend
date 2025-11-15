@@ -95,7 +95,7 @@ const PatientSchema = new mongoose.Schema(
     paymentStatus: {
       type: String,
       required: true,
-      enum: ["Paid", "Not Paid"]
+      enum: ["Paid", "Not Paid", "Partially Paid"]
     },
     resultStatus: {
       type: String,
@@ -124,6 +124,26 @@ const PatientSchema = new mongoose.Schema(
     total: {
       type: Number,
       required: true
+    },
+    discountPercentage: {
+      type: Number,
+      default: 0
+    },
+    discountAmount: {
+      type: Number,
+      default: 0
+    },
+    netTotal: {
+      type: Number,
+      required: true
+    },
+    paidAmount: {
+      type: Number,
+      default: 0
+    },
+    dueAmount: {
+      type: Number,
+      default: 0
     }
   },
   {
