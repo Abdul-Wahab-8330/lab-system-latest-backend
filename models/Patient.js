@@ -80,6 +80,18 @@ const PatientSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    fatherHusbandName: {
+      type: String,
+      trim: true
+    },
+    nicNo: {
+      type: String,
+      trim: true
+    },
+    specimen: {
+      type: String,
+      default: "Taken in Lab"
+    },
     paymentStatus: {
       type: String,
       required: true,

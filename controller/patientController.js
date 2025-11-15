@@ -38,7 +38,21 @@ async function generateCaseNo() {
 
 const createPatient = async (req, res) => {
   try {
-    const { name, age, gender, phone, paymentStatus, paymentStatusUpdatedBy, patientRegisteredBy, referencedBy, selectedTests, resultStatus } = req.body;
+    const {
+      name,
+      age,
+      gender,
+      phone,
+      fatherHusbandName,
+      nicNo,
+      specimen,
+      paymentStatus,
+      paymentStatusUpdatedBy,
+      patientRegisteredBy,
+      referencedBy,
+      selectedTests,
+      resultStatus
+    } = req.body;
     // validation (basic)
     if (!name || !age || !gender || !phone) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -74,6 +88,9 @@ const createPatient = async (req, res) => {
       age,
       gender,
       phone,
+      fatherHusbandName: fatherHusbandName || '',
+      nicNo: nicNo || '',
+      specimen: specimen || 'Taken in Lab',
       paymentStatus: paymentStatus || 'Not Paid',
       resultStatus: resultStatus || 'Pending',
       referencedBy: referencedBy || 'Self',
@@ -112,13 +129,13 @@ const getPatientById = async (req, res) => {
       .populate({
         path: 'tests.testId',
         model: 'TestTemplate',
-        select: 'specimen testName testPrice' 
+        select: 'specimen testName testPrice'
       });
-    
+
     if (!patient) {
       return res.status(404).json({ error: "Patient not found" });
     }
-    
+
     res.json(patient);
   } catch (err) {
     console.error("getPatientById err:", err);
@@ -134,12 +151,12 @@ const searchPatients = async (req, res) => {
 
     const patients = await Patient.find({
       $or: [
-  { name: { $regex: q, $options: 'i' } },
-  { phone: { $regex: q, $options: 'i' } },
-  { refNo: { $regex: q, $options: 'i' } },
-  { caseNo: { $regex: q, $options: 'i' } }
-]
-    }).select('name age phone gender referencedBy refNo caseNo')
+        { name: { $regex: q, $options: 'i' } },
+        { phone: { $regex: q, $options: 'i' } },
+        { refNo: { $regex: q, $options: 'i' } },
+        { caseNo: { $regex: q, $options: 'i' } }
+      ]
+    }).select('name age phone gender referencedBy refNo caseNo fatherHusbandName nicNo specimen')
 
     console.log('Found patients:', patients.length); // Debug log
     res.json(patients);
