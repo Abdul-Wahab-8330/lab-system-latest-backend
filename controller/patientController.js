@@ -90,14 +90,23 @@ const createPatient = async (req, res) => {
 
     // Auto-correct payment status based on actual payment
     // Auto-correct payment status based on actual payment
+    // Auto-correct payment status ONLY if discount/payment data was provided
     let finalPaymentStatus = paymentStatus || 'Not Paid';
-    if (paidAmount >= netTotal) {
-      finalPaymentStatus = 'Paid';
-    } else if (paidAmount > 0) {
-      finalPaymentStatus = 'Partially Paid';
-    } else {
-      finalPaymentStatus = 'Not Paid';
+
+    // Only auto-calculate if user actually entered payment/discount data
+    const hasPaymentData = discountPercentage > 0 || discountAmount > 0 || paidAmount > 0;
+
+    if (hasPaymentData) {
+      // Discount panel was used, auto-calculate status
+      if (paidAmount >= netTotal) {
+        finalPaymentStatus = 'Paid';
+      } else if (paidAmount > 0) {
+        finalPaymentStatus = 'Partially Paid';
+      } else {
+        finalPaymentStatus = 'Not Paid';
+      }
     }
+    // Otherwise, use the manually selected paymentStatus from the form
 
     // generate refNo
     const refNo = await generateRefNo();
