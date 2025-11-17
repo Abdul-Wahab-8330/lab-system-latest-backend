@@ -88,25 +88,39 @@ const createPatient = async (req, res) => {
     const netTotal = Math.max(0, total - discountAmount); // Prevent negative
     const dueAmount = Math.max(0, netTotal - paidAmount); // Prevent negative
 
-    // Auto-correct payment status based on actual payment
-    // Auto-correct payment status based on actual payment
-    // Auto-correct payment status ONLY if discount/payment data was provided
-    let finalPaymentStatus = paymentStatus || 'Not Paid';
 
-    // Only auto-calculate if user actually entered payment/discount data
+    // Auto-correct payment status and paidAmount
+    let finalPaymentStatus = paymentStatus || 'Not Paid';
+    let finalPaidAmount = paidAmount;
+    let finalDueAmount = dueAmount;
+
+    // Check if discount panel was used
     const hasPaymentData = discountPercentage > 0 || discountAmount > 0 || paidAmount > 0;
 
     if (hasPaymentData) {
-      // Discount panel was used, auto-calculate status
+      // Discount panel was used - auto-calculate based on actual payment
       if (paidAmount >= netTotal) {
         finalPaymentStatus = 'Paid';
+        finalPaidAmount = netTotal;
+        finalDueAmount = 0;
       } else if (paidAmount > 0) {
         finalPaymentStatus = 'Partially Paid';
+        finalDueAmount = netTotal - paidAmount;
       } else {
         finalPaymentStatus = 'Not Paid';
+        finalDueAmount = netTotal;
       }
+    } else {
+      // Discount panel NOT used - set values based on manual payment status
+      if (finalPaymentStatus === 'Paid') {
+        finalPaidAmount = netTotal;
+        finalDueAmount = 0;
+      } else if (finalPaymentStatus === 'Not Paid') {
+        finalPaidAmount = 0;
+        finalDueAmount = netTotal;
+      }
+      // For 'Partially Paid' without discount panel, keep user's paidAmount
     }
-    // Otherwise, use the manually selected paymentStatus from the form
 
     // generate refNo
     const refNo = await generateRefNo();
@@ -132,8 +146,8 @@ const createPatient = async (req, res) => {
       discountPercentage,
       discountAmount,
       netTotal,
-      paidAmount,
-      dueAmount
+      paidAmount: finalPaidAmount,
+      dueAmount: finalDueAmount
     });
 
     await patient.save();
