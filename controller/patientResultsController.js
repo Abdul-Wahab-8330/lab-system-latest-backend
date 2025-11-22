@@ -111,19 +111,13 @@ exports.addResultsToPatient = async (req, res) => {
 
         patient.results = existingResults;
 
-        // Check if some results are added
-        // const allTestsHaveResults =
-        //     patient.results.length === patient.tests.length &&
-        //     patient.results.every(r => r.fields.every(f => f.defaultValue && f.defaultValue.trim() !== ""));
-
-        // patient.resultStatus = allTestsHaveResults ? "Added" : "Pending";
-
-        const someResultsAdded = patient.results.length > 0 &&
-            patient.results.some(r =>
+        // Check if ALL tests have results
+        const allTestsCompleted = patient.results.length === patient.tests.length &&
+            patient.results.every(r =>
                 r.fields.some(f => f.defaultValue && f.defaultValue.trim() !== "")
             );
 
-        patient.resultStatus = someResultsAdded ? "Added" : "Pending";
+        patient.resultStatus = allTestsCompleted ? "Added" : "Pending";
         patient.resultAddedBy = resultAddedBy;
 
         await patient.save();
