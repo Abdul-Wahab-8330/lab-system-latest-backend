@@ -122,6 +122,13 @@ exports.addResultsToPatient = async (req, res) => {
 
         await patient.save();
 
+        // Emit socket event for real-time updates
+        if (global.io) {
+            global.io.emit('resultAdded', {
+                patientId: req.params.id
+            });
+        }
+
         res.json({ message: "Results saved successfully" });
     } catch (err) {
         console.error(err);
