@@ -125,7 +125,9 @@ exports.addResultsToPatient = async (req, res) => {
         // Emit socket event for real-time updates
         if (global.io) {
             global.io.emit('resultAdded', {
-                patientId: req.params.id
+                patientId: req.params.id,
+                patientName: patient.name,
+                resultStatus: patient.resultStatus
             });
         }
 
@@ -146,6 +148,13 @@ exports.resetPatientResults = async (req, res) => {
         patient.resultStatus = "Pending";
         patient.resultAddedBy = null; // Optional: clear who added
         await patient.save();
+
+        if (global.io) {
+            global.io.emit('resultReset', {
+                patientId: req.params.id,
+                patientName: patient.name
+            });
+        }
 
         res.json({ message: "Results reset successfully", patient });
     } catch (error) {

@@ -151,6 +151,14 @@ const createPatient = async (req, res) => {
     });
 
     await patient.save();
+
+    // Emit socket event for real-time updates
+    if (global.io) {
+      global.io.emit('patientRegistered', {
+        patient: patient
+      });
+    }
+
     return res.status(201).json(patient);
   } catch (err) {
     console.error("createPatient err:", err);
@@ -227,6 +235,14 @@ const deletePatients = async (req, res) => {
         message: 'patient not found'
       })
     }
+
+    if (global.io) {
+      global.io.emit('patientDeleted', {
+        patientId: id,
+        patientName: patient.name
+      });
+    }
+
     res.json({
       success: true,
       message: 'Patient deleted successfully'
@@ -270,6 +286,15 @@ const updatePaymentStatus = async (req, res) => {
 
     if (!updatedPatient) {
       return res.status(404).json({ message: "Patient not found" });
+    }
+    if (global.io) {
+      global.io.emit('paymentStatusUpdated', {
+        patientId: id,
+        patientName: updatedPatient.name,
+        paymentStatus: updatedPatient.paymentStatus,
+        paidAmount: updatedPatient.paidAmount,
+        dueAmount: updatedPatient.dueAmount
+      });
     }
 
     res.json({ success: true, updatedPatient });
