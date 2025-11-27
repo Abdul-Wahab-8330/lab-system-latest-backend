@@ -71,7 +71,7 @@ exports.getPatientTestsWithFields = async (req, res) => {
 // PATCH /api/results/:id/results
 exports.addResultsToPatient = async (req, res) => {
     try {
-        const { tests, resultAddedBy } = req.body; // 'tests' = changed tests only
+        const { tests, resultAddedBy, socketId } = req.body; // 'tests' = changed tests only
 
         const patient = await Patient.findById(req.params.id);
         if (!patient) {
@@ -127,7 +127,8 @@ exports.addResultsToPatient = async (req, res) => {
             global.io.emit('resultAdded', {
                 patientId: req.params.id,
                 patientName: patient.name,
-                resultStatus: patient.resultStatus
+                resultStatus: patient.resultStatus,
+                triggeredBySocketId: socketId
             });
         }
 
