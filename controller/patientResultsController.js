@@ -71,22 +71,41 @@ exports.getPatientTestsWithFields = async (req, res) => {
 // PATCH /api/results/:id/results
 exports.addResultsToPatient = async (req, res) => {
     try {
-        const { tests, resultAddedBy, socketId } = req.body; // 'tests' = changed tests only
+        const { tests, resultAddedBy, socketId } = req.body;
 
         const patient = await Patient.findById(req.params.id);
         if (!patient) {
             return res.status(404).json({ message: "Patient not found" });
         }
 
-        // Convert to map for quick lookup
         const existingResults = patient.results || [];
 
         tests.forEach(t => {
-            const idx = existingResults.findIndex(r => r.testId.toString() === t.testId.toString());
+            // ✅ FIX: Handle multiple formats of testId
+            let testIdString;
+            if (t.testId?._id) {
+                // Case 1: Populated object { _id: '123', testName: 'CBC', ... }
+                testIdString = t.testId._id.toString();
+            } else if (t.testId) {
+                // Case 2: Direct ObjectId or string
+                testIdString = t.testId.toString();
+            }
+
+            // Skip if we couldn't extract a valid testId
+            if (!testIdString) {
+                console.error('Invalid testId format:', t);
+                return;
+            }
+
+            const idx = existingResults.findIndex(r =>
+                r.testId?.toString() === testIdString
+            );
+
             if (idx > -1) {
-                // Update existing test results
+                // Update existing result
                 existingResults[idx] = {
-                    ...existingResults[idx],
+                    testId: testIdString,
+                    testName: t.testName,
                     fields: t.fields.map(f => ({
                         fieldName: f.fieldName,
                         defaultValue: f.defaultValue,
@@ -97,7 +116,7 @@ exports.addResultsToPatient = async (req, res) => {
             } else {
                 // Add new result
                 existingResults.push({
-                    testId: t.testId,
+                    testId: testIdString,
                     testName: t.testName,
                     fields: t.fields.map(f => ({
                         fieldName: f.fieldName,
@@ -112,7 +131,7 @@ exports.addResultsToPatient = async (req, res) => {
         patient.results = existingResults;
 
         // Check if ALL tests have results
-        const allTestsCompleted = patient.results.length === patient.tests.length &&
+        const allTestsCompleted = patient.results.length >= patient.tests.length &&
             patient.results.every(r =>
                 r.fields.some(f => f.defaultValue && f.defaultValue.trim() !== "")
             );
@@ -122,7 +141,7 @@ exports.addResultsToPatient = async (req, res) => {
 
         await patient.save();
 
-        // Emit socket event for real-time updates
+        // Emit socket event
         if (global.io) {
             global.io.emit('resultAdded', {
                 patientId: req.params.id,
