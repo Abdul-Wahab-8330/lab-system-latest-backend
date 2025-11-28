@@ -92,7 +92,7 @@ const searchTests = async (req, res) => {
     const tests = await TestTemplate.find({
       $or: searchConditions
     })
-      .limit(10)
+      .limit(20)
       .select('_id testCode testName testPrice category')
       .lean();
 
