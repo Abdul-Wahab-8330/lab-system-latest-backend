@@ -13,6 +13,8 @@ const patientRoutes = require("./routes/patientRoutes");
 const resultRoutes = require("./routes/patientResultsRoutes");
 const inventoryRoutes = require("./routes/inventoryRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
+const systemSettingsRoutes = require('./routes/systemSettingsRoutes');
+
 
 dotenv.config();
 
@@ -53,6 +55,9 @@ app.use("/api/patients", patientRoutes);
 app.use("/api/results", resultRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use('/api/system/filters', systemSettingsRoutes);
+
+
 
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
