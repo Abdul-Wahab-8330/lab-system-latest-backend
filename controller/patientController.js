@@ -17,23 +17,18 @@ async function generateRefNo() {
   );
 
   const number = String(counter.seq).padStart(4, "0");
-  return `${number}-${month}-${year}`;
+  const centerCode = "9101";
+  return `${centerCode}-${year}-${number}`;
+
 }
 
-async function generateCaseNo() {
+function generateCaseNo() {
   const today = new Date();
   const day = String(today.getDate()).padStart(2, "0");
   const month = String(today.getMonth() + 1).padStart(2, "0");
-  const dateKey = `${today.getFullYear()}-${month}-${day}`;
+  const centerCode = "9101";
 
-  const counter = await RefCounter.findOneAndUpdate(
-    { name: `case_ref_${dateKey}` },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true }
-  );
-
-  const caseNumber = 9100 + counter.seq;
-  return `${caseNumber}-${day}-${month}`;
+  return `${centerCode}-${day}-${month}`;
 }
 
 const createPatient = async (req, res) => {

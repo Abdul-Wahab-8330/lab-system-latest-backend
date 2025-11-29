@@ -55,12 +55,12 @@ const PatientSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true
-    }, // Patient Number: "0001-11-25"
+    },
     caseNo: {
       type: String,
       required: true,
       unique: true
-    }, // Case Number: "9101-08-11"
+    }, 
     name: {
       type: String,
       required: true,
