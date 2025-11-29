@@ -2,6 +2,34 @@ const Patient = require("../models/Patient");
 const RefCounter = require("../models/RefCounter");
 const TestTemplate = require("../models/TestTemplate"); // your existing test schema
 const mongoose = require("mongoose");
+const Doctor = require('../models/Doctor');
+
+
+async function ensureDoctorExists(doctorName) {
+  if (!doctorName || doctorName.trim() === '' || doctorName.toLowerCase() === 'self') {
+    return doctorName; // Don't create doctor for "Self" or empty
+  }
+
+  try {
+    // Check if doctor exists (case-insensitive)
+    let doctor = await Doctor.findOne({ 
+      name: { $regex: new RegExp(`^${doctorName.trim()}$`, 'i') } 
+    });
+
+    // If doesn't exist, create it
+    if (!doctor) {
+      doctor = new Doctor({ name: doctorName.trim() });
+      await doctor.save();
+      console.log(`✅ Auto-created new doctor: ${doctorName}`);
+    }
+
+    return doctor.name; // Return the properly formatted name from DB
+  } catch (error) {
+    console.error('Error ensuring doctor exists:', error);
+    return doctorName; // Return original name if error
+  }
+}
+
 
 // Generate unique 6-digit ref no (atomic)
 async function generateRefNo() {
@@ -133,7 +161,7 @@ const createPatient = async (req, res) => {
       specimen: specimen || 'Taken in Lab',
       paymentStatus: finalPaymentStatus,
       resultStatus: resultStatus || 'Pending',
-      referencedBy: referencedBy || 'Self',
+      referencedBy: await ensureDoctorExists(referencedBy || 'Self'),
       paymentStatusUpdatedBy,
       patientRegisteredBy,
       tests: testsForPatient,
