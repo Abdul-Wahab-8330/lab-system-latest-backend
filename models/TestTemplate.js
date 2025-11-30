@@ -45,13 +45,19 @@ const TestTemplateSchema = new mongoose.Schema({
   },
   fields: [FieldSchema],
 
-   // ✅ NEW: Optional narrative sections
+  // ✅ NEW: Flag for diagnostic tests (ECG, X-Ray, etc.)
+  isDiagnosticTest: {
+    type: Boolean,
+    default: false
+  },
+
+  // ✅ NEW: Optional narrative sections
   reportExtras: {
     type: mongoose.Schema.Types.Mixed,
     default: {},
     required: false
   }
-  
+
 }, { timestamps: true });
 
 module.exports = mongoose.model('TestTemplate', TestTemplateSchema);

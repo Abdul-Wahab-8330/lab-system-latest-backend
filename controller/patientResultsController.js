@@ -4,15 +4,28 @@ const TestTemplate = require("../models/TestTemplate");
 // Get pending patients with their tests
 exports.getPendingPatients = async (req, res) => {
     try {
-        const patients = await Patient.find({ resultStatus: "Pending" }).lean();
+        const patients = await Patient.find({ resultStatus: "Pending" })
+            .populate({
+                path: 'tests.testId',
+                model: 'TestTemplate',
+                select: 'testName testPrice isDiagnosticTest'
+            })
+            .lean();
         res.json(patients);
     } catch (err) {
         res.status(500).json({ message: "Server Error", error: err.message });
     }
 };
+
 exports.getAddedPatients = async (req, res) => {
     try {
-        const patients = await Patient.find({ resultStatus: "Added" }).lean();
+        const patients = await Patient.find({ resultStatus: "Added" })
+            .populate({
+                path: 'tests.testId',
+                model: 'TestTemplate',
+                select: 'testName testPrice isDiagnosticTest'
+            })
+            .lean();
         res.json(patients);
     } catch (err) {
         res.status(500).json({ message: "Server Error", error: err.message });
@@ -26,7 +39,7 @@ exports.getPatientTestsWithFields = async (req, res) => {
             .populate({
                 path: 'tests.testId',
                 model: 'TestTemplate',
-                select: 'specimen testName testPrice fields category reportExtras'
+                select: 'specimen testName testPrice fields category reportExtras isDiagnosticTest'
             })
             .lean();
         if (!patient) return res.status(404).json({ message: "Patient not found" });
@@ -130,8 +143,20 @@ exports.addResultsToPatient = async (req, res) => {
 
         patient.results = existingResults;
 
-        // Check if ALL tests have results
-        const allTestsCompleted = patient.results.length >= patient.tests.length &&
+        // ✅ FILTER: Only check non-diagnostic tests for completion
+        // First, populate tests to access isDiagnosticTest
+        await patient.populate({
+            path: 'tests.testId',
+            model: 'TestTemplate',
+            select: 'isDiagnosticTest'
+        });
+
+        const nonDiagnosticTests = patient.tests.filter(test =>
+            test.testId?.isDiagnosticTest !== true
+        );
+
+        // Check if ALL non-diagnostic tests have results
+        const allTestsCompleted = patient.results.length >= nonDiagnosticTests.length &&
             patient.results.every(r =>
                 r.fields.some(f => f.defaultValue && f.defaultValue.trim() !== "")
             );
