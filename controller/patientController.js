@@ -12,8 +12,8 @@ async function ensureDoctorExists(doctorName) {
 
   try {
     // Check if doctor exists (case-insensitive)
-    let doctor = await Doctor.findOne({ 
-      name: { $regex: new RegExp(`^${doctorName.trim()}$`, 'i') } 
+    let doctor = await Doctor.findOne({
+      name: { $regex: new RegExp(`^${doctorName.trim()}$`, 'i') }
     });
 
     // If doesn't exist, create it
@@ -50,13 +50,26 @@ async function generateRefNo() {
 
 }
 
-function generateCaseNo() {
+async function generateCaseNo() {
   const today = new Date();
   const day = String(today.getDate()).padStart(2, "0");
   const month = String(today.getMonth() + 1).padStart(2, "0");
-  const centerCode = "9101";
+  const year = today.getFullYear();
 
-  return `${centerCode}-${day}-${month}`;
+  // Create a unique key for today's date
+  const dateKey = `${year}-${month}-${day}`;
+
+  // Get or create counter for today, incrementing atomically
+  const counter = await RefCounter.findOneAndUpdate(
+    { name: `caseno_${dateKey}` },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+
+  // Start from 9101 and increment
+  const caseNumber = 9101 + counter.seq - 1;
+
+  return `${caseNumber}-${day}-${month}`;
 }
 
 const createPatient = async (req, res) => {
