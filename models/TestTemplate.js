@@ -7,6 +7,9 @@ const FieldSchema = new mongoose.Schema({
   defaultValue: { type: String, default: '' },
   unit: { type: String, default: '' },
   range: { type: String, default: '' },
+  category: {
+    type: String,
+  }
 });
 
 const TestTemplateSchema = new mongoose.Schema({
@@ -41,6 +44,14 @@ const TestTemplateSchema = new mongoose.Schema({
     required: true,
   },
   fields: [FieldSchema],
+
+   // ✅ NEW: Optional narrative sections
+  reportExtras: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+    required: false
+  }
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model('TestTemplate', TestTemplateSchema);
