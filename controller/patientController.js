@@ -339,4 +339,155 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
-module.exports = { getPatients, createPatient, searchPatients, updatePaymentStatus, deletePatients, getPatientById };
+
+// Update patient details
+const updatePatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, age, gender, phone, fatherHusbandName, nicNo } = req.body;
+
+    const patient = await Patient.findByIdAndUpdate(
+      id,
+      { name, age, gender, phone, fatherHusbandName, nicNo },
+      { new: true, runValidators: true }
+    ).populate({
+      path: 'tests.testId',
+      model: 'TestTemplate'
+    });
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    // Emit socket event for real-time updates
+    if (global.io) {
+      global.io.emit('patientUpdated', {
+        patient: patient
+      });
+    }
+
+    res.status(200).json({ success: true, message: 'Patient updated successfully', patient });
+  } catch (error) {
+    console.error('Error updating patient:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+// Fixed Delete Patient Test Function
+const deletePatientTest = async (req, res) => {
+  try {
+    const { patientId, testId } = req.params;
+
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    // Store old values for calculation
+    const oldTotal = patient.total;
+    const oldNetTotal = patient.netTotal;
+    const oldPaidAmount = patient.paidAmount;
+
+    // Find and remove the test
+    const testBeforeDelete = patient.tests.find(t => t._id.toString() === testId);
+    if (!testBeforeDelete) {
+      return res.status(404).json({ success: false, message: 'Test not found' });
+    }
+
+    patient.tests = patient.tests.filter(t => t._id.toString() !== testId);
+
+    // ============ STEP 1: Calculate new total ============
+    const newTotal = patient.tests.reduce((sum, test) => sum + (test.price || 0), 0);
+    patient.total = newTotal;
+
+    // ============ STEP 2: Recalculate discount ============
+    // If there was a percentage discount, recalculate based on new total
+    if (patient.discountPercentage > 0) {
+      patient.discountAmount = (newTotal * patient.discountPercentage) / 100;
+    }
+    // If there was a fixed PKR discount, keep it the same (unless it exceeds new total)
+    else if (patient.discountAmount > 0) {
+      patient.discountAmount = Math.min(patient.discountAmount, newTotal);
+    }
+
+    // ============ STEP 3: Calculate new net total ============
+    const newNetTotal = Math.max(0, newTotal - (patient.discountAmount || 0));
+    patient.netTotal = newNetTotal;
+
+    // ============ STEP 4: Recalculate paid amount (KEY FIX) ============
+    // Calculate the deleted test's share of the net total (after discount)
+    const deletedTestPrice = testBeforeDelete?.price || 0;
+
+    // Calculate the discounted price of the deleted test
+    const deletedTestDiscountedPrice = patient.discountPercentage > 0
+      ? deletedTestPrice - (deletedTestPrice * patient.discountPercentage / 100)
+      : (patient.discountAmount > 0 && oldTotal > 0)
+        ? deletedTestPrice - (deletedTestPrice * (patient.discountAmount / oldTotal))
+        : deletedTestPrice;
+
+    // Subtract the deleted test's discounted price from paid amount
+    patient.paidAmount = Math.max(0, oldPaidAmount - deletedTestDiscountedPrice);
+
+    // Ensure paid amount doesn't exceed new net total
+    patient.paidAmount = Math.min(patient.paidAmount, newNetTotal);
+
+    // Round to avoid floating point issues
+    patient.paidAmount = Math.round(patient.paidAmount * 100) / 100;
+
+    // ============ STEP 5: Calculate new due amount ============
+    patient.dueAmount = Math.max(0, newNetTotal - patient.paidAmount);
+
+    // ============ STEP 6: Auto-correct payment status ============
+    if (newNetTotal === 0) {
+      patient.paymentStatus = 'Not Paid';
+      patient.paidAmount = 0;
+      patient.dueAmount = 0;
+    } else if (patient.paidAmount >= newNetTotal) {
+      patient.paymentStatus = 'Paid';
+      patient.paidAmount = newNetTotal;
+      patient.dueAmount = 0;
+    } else if (patient.paidAmount > 0 && patient.paidAmount < newNetTotal) {
+      patient.paymentStatus = 'Partially Paid';
+    } else {
+      patient.paymentStatus = 'Not Paid';
+    }
+
+    await patient.save();
+
+    // Emit socket event
+    if (global.io) {
+      global.io.emit('patientTestDeleted', {
+        patientId: patientId,
+        patientName: patient.name,
+        testName: testBeforeDelete?.testName || 'Unknown Test',
+        newTotal: patient.total,
+        newNetTotal: patient.netTotal,
+        newPaidAmount: patient.paidAmount,
+        newDueAmount: patient.dueAmount,
+        paymentStatus: patient.paymentStatus
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Test deleted successfully',
+      patient,
+      calculation: {
+        oldTotal,
+        newTotal,
+        oldNetTotal,
+        newNetTotal,
+        deletedTestPrice: testBeforeDelete?.price || 0,
+        deletedTestDiscountedPrice: deletedTestDiscountedPrice,
+        oldPaidAmount,
+        newPaidAmount: patient.paidAmount,
+        newDueAmount: patient.dueAmount
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting test:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+module.exports = { getPatients, createPatient, searchPatients, updatePaymentStatus, deletePatients, getPatientById, updatePatient, deletePatientTest };

@@ -219,6 +219,48 @@ exports.addResultsToPatient = async (req, res) => {
 };
 
 
+
+// DELETE a specific test from patient's tests array
+exports.deletePatientTest = async (req, res) => {
+    try {
+        const { patientId, testId } = req.params;
+
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+            return res.status(404).json({ message: "Patient not found" });
+        }
+
+        // Remove the test from tests array
+        patient.tests = patient.tests.filter(
+            test => test.testId.toString() !== testId
+        );
+
+        // Recalculate total and netTotal
+        const newTotal = patient.tests.reduce((sum, test) => sum + (test.price || 0), 0);
+        patient.total = newTotal;
+        patient.netTotal = Math.max(0, newTotal - patient.discountAmount);
+        patient.dueAmount = Math.max(0, patient.netTotal - patient.paidAmount);
+
+        await patient.save();
+
+        // Emit socket event
+        if (global.io) {
+            global.io.emit('testDeleted', {
+                patientId,
+                patientName: patient.name
+            });
+        }
+
+        res.json({ message: "Test deleted successfully", patient });
+    } catch (error) {
+        console.error("Error deleting test:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+
+
+
 exports.resetPatientResults = async (req, res) => {
     try {
         const patient = await Patient.findById(req.params.id);
