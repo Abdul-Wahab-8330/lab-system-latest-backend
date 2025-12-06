@@ -8,13 +8,14 @@ const {
   resetPatientResults,
   deletePatientTest
 } = require("../controller/patientResultsController");
+const verifyToken = require("../middleware/verifyToken");
 
-router.get("/pending", getPendingPatients);
-router.get("/added", getAddedPatients);
-router.get("/:id/tests", getPatientTestsWithFields);
-router.patch("/:id/results", addResultsToPatient);
-router.patch("/:id/reset", resetPatientResults);
-router.delete('/patients/:patientId/tests/:testId', deletePatientTest);
+router.get("/pending", verifyToken, getPendingPatients);
+router.get("/added", verifyToken, getAddedPatients);
+router.get("/:id/tests", verifyToken, getPatientTestsWithFields);
+router.patch("/:id/results", verifyToken, addResultsToPatient);
+router.patch("/:id/reset", verifyToken, resetPatientResults);
+router.delete('/patients/:patientId/tests/:testId', verifyToken, deletePatientTest);
 
 
 module.exports = router;

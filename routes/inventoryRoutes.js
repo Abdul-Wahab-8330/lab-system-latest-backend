@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const verifyToken = require('../middleware/verifyToken');
+
 const {
   createItem,
   getAllItems,
@@ -16,22 +18,22 @@ const {
 } = require('../controller/inventoryController');
 
 // Inventory Items Routes
-router.post('/items', createItem);
-router.get('/items', getAllItems);
-router.put('/items/:id', updateItem);
-router.delete('/items/:id', deleteItem);
+router.post('/items',  verifyToken, createItem);
+router.get('/items',  verifyToken, getAllItems);
+router.put('/items/:id',  verifyToken, updateItem);
+router.delete('/items/:id',  verifyToken, deleteItem);
 
 // Transaction Routes
-router.post('/transactions/add', addStock);
-router.post('/transactions/remove', removeStock);
-router.get('/transactions', getAllTransactions);
-router.get('/transactions/report', getTransactionsByDateRange);
-router.delete('/transactions/:id', deleteTransaction);
+router.post('/transactions/add',  verifyToken, addStock);
+router.post('/transactions/remove',  verifyToken, removeStock);
+router.get('/transactions',  verifyToken, getAllTransactions);
+router.get('/transactions/report',  verifyToken, getTransactionsByDateRange);
+router.delete('/transactions/:id',  verifyToken, deleteTransaction);
 
 // Stock Level Route
-router.get('/stock', getCurrentStock);
+router.get('/stock', verifyToken, getCurrentStock);
 
-router.get('/stock-levels-with-totals', getStockLevelsWithTotals);
-router.get('/daily-summary', getDailySummary);
+router.get('/stock-levels-with-totals',  verifyToken, getStockLevelsWithTotals);
+router.get('/daily-summary',  verifyToken, getDailySummary);
 
 module.exports = router;

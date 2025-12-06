@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const verifyToken = require('../middleware/verifyToken');
+
 const { 
   getAllFilters, 
   getFilter, 
@@ -8,15 +10,15 @@ const {
 } = require('../controller/systemSettingsController');
 
 // Get all filters
-router.get('/', getAllFilters);
+router.get('/', verifyToken, getAllFilters);
 
 // Get specific filter
-router.get('/:type', getFilter);
+router.get('/:type', verifyToken, getFilter);
 
 // Set/update filter
-router.put('/:type', setFilter);
+router.put('/:type', verifyToken, setFilter);
 
 // Reset filter
-router.delete('/:type', resetFilter);
+router.delete('/:type', verifyToken, resetFilter);
 
 module.exports = router;

@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const doctorController = require("../controller/doctorController");
+const verifyToken = require('../middleware/verifyToken');
 
-router.get("/", doctorController.getDoctors);
-router.post("/", doctorController.addDoctor);
-router.delete("/:id", doctorController.deleteDoctor);
+
+router.get("/", verifyToken, doctorController.getDoctors);
+router.post("/", verifyToken, doctorController.addDoctor);
+router.delete("/:id", verifyToken, doctorController.deleteDoctor);
 
 module.exports = router;
