@@ -4,23 +4,30 @@ exports.getPublicReports = async (req, res) => {
     try {
         const { name, patientNumber, phone } = req.body;
 
-        // Validation
-        if (!name || !patientNumber || !phone) {
+        // Validation (name is optional)
+        if (!patientNumber || !phone) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: 'Patient number and phone are required'
             });
         }
 
-         // Clean patient number (remove dashes for matching)
+        // Clean patient number (remove dashes for matching)
         // const cleanPatientNumber = patientNumber.replace(/-/g, '');
 
-        // Find patient matching ALL THREE criteria
-        const patient = await Patient.findOne({
-            name: { $regex: new RegExp(`^${name}$`, 'i') }, // Case-insensitive exact match
+        // Build query - name is optional
+        const query = {
             refNo: patientNumber,
             phone: phone
-        }).populate({
+        };
+
+        // Add name to query only if provided
+        if (name && name.trim()) {
+            query.name = { $regex: new RegExp(`^${name.trim()}$`, 'i') }; // Case-insensitive exact match
+        }
+
+        // Find patient matching criteria
+        const patient = await Patient.findOne(query).populate({
             path: 'tests.testId',
             model: 'TestTemplate',
             select: 'testName testCode specimen performed reported fields category reportExtras isDiagnosticTest'
@@ -34,7 +41,7 @@ exports.getPublicReports = async (req, res) => {
         }
 
         // ✅ Filter out diagnostic tests from public view
-        const filteredTests = patient.tests.filter(test => 
+        const filteredTests = patient.tests.filter(test =>
             test.testId?.isDiagnosticTest !== true
         );
 
@@ -70,7 +77,7 @@ exports.getPublicReports = async (req, res) => {
         if (patient.resultStatus === 'Added' && patient.results && patient.results.length > 0) {
             // Merge tests with results
             const testsWithResults = filteredTests.map(test => {
-                const result = patient.results.find(r => 
+                const result = patient.results.find(r =>
                     r.testId.toString() === test.testId._id.toString()
                 );
 
