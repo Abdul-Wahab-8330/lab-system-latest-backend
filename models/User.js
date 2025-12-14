@@ -17,8 +17,8 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['user', 'admin', 'receptionist', 'lab_technologist'],
-    default: "user"
+    enum: ['admin', 'senior_receptionist', 'junior_receptionist', 'senior_lab_tech', 'junior_lab_tech'],
+    default: "junior_receptionist"
   }
 }, { timestamps: true });
 
