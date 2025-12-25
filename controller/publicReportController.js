@@ -30,7 +30,7 @@ exports.getPublicReports = async (req, res) => {
         const patient = await Patient.findOne(query).populate({
             path: 'tests.testId',
             model: 'TestTemplate',
-            select: 'testName testCode specimen performed reported fields category reportExtras isDiagnosticTest'
+            select: 'testName testCode specimen performed reported fields category reportExtras isDiagnosticTest scaleConfig'
         }).lean();
 
         if (!patient) {
@@ -40,10 +40,7 @@ exports.getPublicReports = async (req, res) => {
             });
         }
 
-        // ✅ Filter out diagnostic tests from public view
-        const filteredTests = patient.tests.filter(test =>
-            test.testId?.isDiagnosticTest !== true
-        );
+        const filteredTests = patient.tests;
 
         // Prepare registration report data
         const registrationReport = {
@@ -58,7 +55,7 @@ exports.getPublicReports = async (req, res) => {
             specimen: patient.specimen,
             referencedBy: patient.referencedBy,
             createdAt: patient.createdAt,
-            tests: filteredTests.map(t => ({
+            tests: patient.tests.map(t => ({  // Use ALL tests (including diagnostic)
                 testName: t.testName,
                 price: t.price,
                 testCode: t.testId?.testCode,
@@ -75,8 +72,14 @@ exports.getPublicReports = async (req, res) => {
         // Prepare final report data (if results exist)
         let finalReport = null;
         if (patient.resultStatus === 'Added' && patient.results && patient.results.length > 0) {
+
+            // ✅ Filter out diagnostic tests ONLY from final report
+    const nonDiagnosticTests = patient.tests.filter(test =>
+        test.testId?.isDiagnosticTest !== true
+    );
+
             // Merge tests with results
-            const testsWithResults = filteredTests.map(test => {
+            const testsWithResults = nonDiagnosticTests.map(test => {
                 const result = patient.results.find(r =>
                     r.testId.toString() === test.testId._id.toString()
                 );
@@ -90,6 +93,7 @@ exports.getPublicReports = async (req, res) => {
                         performed: test.testId?.performed,
                         reported: test.testId?.reported,
                         reportExtras: test.testId?.reportExtras,
+                        scaleConfig: test.testId?.scaleConfig,
                         fields: result.fields.map(f => ({
                             fieldName: f.fieldName,
                             defaultValue: f.defaultValue,

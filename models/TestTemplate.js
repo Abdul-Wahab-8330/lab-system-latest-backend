@@ -56,6 +56,10 @@ const TestTemplateSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {},
     required: false
+  },
+  scaleConfig: {
+    thresholds: [Number],  // e.g., [4, 7]
+    labels: [String]       // e.g., ["Low", "Moderate", "High"]
   }
 
 }, { timestamps: true });

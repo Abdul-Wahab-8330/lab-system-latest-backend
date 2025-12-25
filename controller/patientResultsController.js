@@ -68,7 +68,7 @@ exports.getPatientTestsWithFields = async (req, res) => {
             .populate({
                 path: 'tests.testId',
                 model: 'TestTemplate',
-                select: 'specimen testName testPrice fields category reportExtras isDiagnosticTest'
+                select: 'specimen testName testPrice fields category reportExtras scaleConfig isDiagnosticTest'
             })
             .lean();
         if (!patient) return res.status(404).json({ message: "Patient not found" });
