@@ -30,7 +30,7 @@ exports.getPublicReports = async (req, res) => {
         const patient = await Patient.findOne(query).populate({
             path: 'tests.testId',
             model: 'TestTemplate',
-            select: 'testName testCode specimen performed reported fields category reportExtras isDiagnosticTest scaleConfig'
+            select: 'testName testCode specimen performed reported fields category reportExtras isDiagnosticTest visualScale scaleConfig'
         }).lean();
 
         if (!patient) {
@@ -87,6 +87,7 @@ exports.getPublicReports = async (req, res) => {
                 if (result) {
                     return {
                         testName: test.testName,
+                        testId: test.testId, 
                         testCode: test.testId?.testCode,
                         category: test.testId?.category,
                         specimen: test.testId?.specimen,
@@ -94,6 +95,7 @@ exports.getPublicReports = async (req, res) => {
                         reported: test.testId?.reported,
                         reportExtras: test.testId?.reportExtras,
                         scaleConfig: test.testId?.scaleConfig,
+                        visualScale: test.testId?.visualScale,
                         fields: result.fields.map(f => ({
                             fieldName: f.fieldName,
                             defaultValue: f.defaultValue,

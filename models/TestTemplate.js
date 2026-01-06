@@ -60,6 +60,14 @@ const TestTemplateSchema = new mongoose.Schema({
   scaleConfig: {
     thresholds: [Number],  // e.g., [4, 7]
     labels: [String]       // e.g., ["Low", "Moderate", "High"]
+  },
+
+  // ✅ NEW: Vertical visual scale config
+  visualScale: {
+    thresholds: [Number],      // e.g., [200, 240] for cholesterol
+    labels: [String],          // e.g., ["Desirable", "Borderline High", "High"]
+    colors: [String],          // e.g., ["#10b981", "#f59e0b", "#ef4444"] (green, yellow, red)
+    rangeTexts: [String]       // e.g., ["<200", "200-240", ">240"] - shown in legend
   }
 
 }, { timestamps: true });
