@@ -125,10 +125,141 @@ const deleteUser = async (req, res) => {
 
 
 
+// ============================================
+// CHANGE PASSWORD - For logged-in user (self)
+// ============================================
+const changePassword = async (req, res) => {
+    try {
+        const { userId, currentPassword, newPassword } = req.body;
+
+        // Validation: Check all fields are provided
+        if (!userId || !currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
+        }
+
+        // Validation: Minimum password length (3 characters)
+        if (newPassword.length < 3) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 3 characters long'
+            });
+        }
+
+        // Find user in database
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Verify current password is correct
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: 'Current password is incorrect'
+            });
+        }
+
+        // Check if new password is same as current password
+        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        if (isSamePassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password must be different from current password'
+            });
+        }
+
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password in database
+        user.password = hashedPassword;
+        await user.save();
+
+        console.log('Password changed successfully for user:', user.userName);
+        res.status(200).json({
+            success: true,
+            message: 'Password changed successfully'
+        });
+
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Something went wrong' 
+        });
+    }
+};
+
+
+// ============================================
+// RESET PASSWORD - For admin to reset any user's password
+// ============================================
+const resetUserPassword = async (req, res) => {
+    try {
+        const { userId, newPassword } = req.body;
+
+        // Validation: Check all fields are provided
+        if (!userId || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'User ID and new password are required'
+            });
+        }
+
+        // Validation: Minimum password length (3 characters)
+        if (newPassword.length < 3) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 3 characters long'
+            });
+        }
+
+        // Find user in database
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password in database (no current password verification needed)
+        user.password = hashedPassword;
+        await user.save();
+
+        console.log('Password reset successfully for user:', user.userName);
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successfully'
+        });
+
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Something went wrong' 
+        });
+    }
+};
+
+
+
 
 module.exports = {
     Register,
     Login,
     getAllUsers,
-    deleteUser
+    deleteUser,
+    changePassword,
+    resetUserPassword
 };
