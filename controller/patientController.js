@@ -77,6 +77,7 @@ const createPatient = async (req, res) => {
     const {
       name,
       age,
+      ageUnit = "years",
       gender,
       phone,
       fatherHusbandName,
@@ -167,6 +168,7 @@ const createPatient = async (req, res) => {
       caseNo,
       name,
       age,
+      ageUnit,
       gender,
       phone,
       fatherHusbandName: fatherHusbandName || '',
@@ -344,11 +346,11 @@ const updatePaymentStatus = async (req, res) => {
 const updatePatient = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, age, gender, phone, fatherHusbandName, nicNo } = req.body;
+    const { name, age, ageUnit, gender, phone, fatherHusbandName, nicNo } = req.body;
 
     const patient = await Patient.findByIdAndUpdate(
       id,
-      { name, age, gender, phone, fatherHusbandName, nicNo },
+      { name, age, ageUnit, gender, phone, fatherHusbandName, nicNo },
       { new: true, runValidators: true }
     ).populate({
       path: 'tests.testId',

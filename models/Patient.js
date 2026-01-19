@@ -60,7 +60,7 @@ const PatientSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true
-    }, 
+    },
     name: {
       type: String,
       required: true,
@@ -68,6 +68,12 @@ const PatientSchema = new mongoose.Schema(
     },
     age: {
       type: Number,
+      required: true
+    },
+    ageUnit: {
+      type: String,
+      enum: ["years", "months", "days"],
+      default: "years",
       required: true
     },
     gender: {
