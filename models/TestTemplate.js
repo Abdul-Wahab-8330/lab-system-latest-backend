@@ -9,6 +9,15 @@ const FieldSchema = new mongoose.Schema({
   range: { type: String, default: '' },
   category: {
     type: String,
+  },
+  // ✅ NEW: Special rendering mode
+  specialRender: {
+    enabled: { type: Boolean, default: false },
+    description: { type: String, default: '' },
+    scaleConfig: {
+      thresholds: [Number],  // e.g., [100, 200]
+      labels: [String]        // e.g., ["Low", "Normal", "High"]
+    }
   }
 });
 
