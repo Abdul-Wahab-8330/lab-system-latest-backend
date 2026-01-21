@@ -6,7 +6,8 @@ const {
   addResultsToPatient,
   getAddedPatients,
   resetPatientResults,
-  deletePatientTest
+  deletePatientTest,
+  getPatientHistoryByPhone
 } = require("../controller/patientResultsController");
 const verifyToken = require("../middleware/verifyToken");
 
@@ -17,5 +18,6 @@ router.patch("/:id/results", verifyToken, addResultsToPatient);
 router.patch("/:id/reset", verifyToken, resetPatientResults);
 router.delete('/patients/:patientId/tests/:testId', verifyToken, deletePatientTest);
 
+router.get("/history/:phone", verifyToken, getPatientHistoryByPhone);
 
 module.exports = router;

@@ -1,27 +1,12 @@
 const Patient = require("../models/Patient");
 const TestTemplate = require("../models/TestTemplate");
 
-// Get pending patients with their tests
-// exports.getPendingPatients = async (req, res) => {
-//     try {
-//         const patients = await Patient.find({ resultStatus: "Pending" })
-//             .populate({
-//                 path: 'tests.testId',
-//                 model: 'TestTemplate',
-//                 select: 'testName testPrice isDiagnosticTest'
-//             })
-//             .lean();
-//         res.json(patients);
-//     } catch (err) {
-//         res.status(500).json({ message: "Server Error", error: err.message });
-//     }
-// };
 
 exports.getPendingPatients = async (req, res) => {
     try {
         // ✅ Get all patients with status "Pending" OR "Added" (we'll filter on frontend)
-        const patients = await Patient.find({ 
-            resultStatus: { $in: ["Pending", "Added"] } 
+        const patients = await Patient.find({
+            resultStatus: { $in: ["Pending", "Added"] }
         })
             .populate({
                 path: 'tests.testId',
@@ -29,17 +14,17 @@ exports.getPendingPatients = async (req, res) => {
                 select: 'testName testPrice isDiagnosticTest'
             })
             .lean();
-        
+
         // ✅ Filter to only return patients with incomplete results
         const incompletePatients = patients.filter(patient => {
-            const nonDiagnosticTests = patient.tests.filter(test => 
+            const nonDiagnosticTests = patient.tests.filter(test =>
                 test.testId?.isDiagnosticTest !== true
             );
-            
+
             // Return patients who have NOT completed all non-diagnostic tests
             return patient.results.length < nonDiagnosticTests.length;
         });
-        
+
         res.json(incompletePatients);
     } catch (err) {
         res.status(500).json({ message: "Server Error", error: err.message });
@@ -281,5 +266,66 @@ exports.resetPatientResults = async (req, res) => {
         res.json({ message: "Results reset successfully", patient });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+// NEW: Get patient history by phone number
+exports.getPatientHistoryByPhone = async (req, res) => {
+    try {
+        const { phone } = req.params;
+        const { limit = 4, excludePatientId } = req.query;
+
+        if (!phone) {
+            return res.status(400).json({ message: "Phone number is required" });
+        }
+
+        // ✅ Normalize phone number - remove all non-digits
+        const normalizePhone = (phoneStr) => {
+            if (!phoneStr) return '';
+            // Remove all non-digit characters
+            const digits = phoneStr.replace(/\D/g, '');
+            // Return last 10 digits (Pakistani mobile numbers)
+            return digits.slice(-10);
+        };
+
+        const normalizedSearchPhone = normalizePhone(phone);
+
+        // ✅ Find all patients with matching phone (last 10 digits)
+        const allPatients = await Patient.find({
+            resultStatus: "Added", // Only get patients with completed results
+            ...(excludePatientId && { _id: { $ne: excludePatientId } }) // Exclude current patient
+        })
+            .populate({
+                path: 'tests.testId',
+                model: 'TestTemplate',
+                select: 'testName fields isDiagnosticTest'
+            })
+            .sort({ createdAt: -1 }) // Most recent first
+            .lean();
+
+        // ✅ Filter by normalized phone number match
+        const matchingPatients = allPatients.filter(patient => {
+            const patientNormalizedPhone = normalizePhone(patient.phone);
+            return patientNormalizedPhone === normalizedSearchPhone;
+        }).slice(0, parseInt(limit)); // Apply limit after filtering
+
+        // Filter out diagnostic tests from each patient's tests
+        const filteredPatients = matchingPatients.map(patient => ({
+            ...patient,
+            tests: patient.tests.filter(test => test.testId?.isDiagnosticTest !== true)
+        }));
+
+        res.json({
+            success: true,
+            count: filteredPatients.length,
+            data: filteredPatients
+        });
+    } catch (err) {
+        console.error("getPatientHistoryByPhone error:", err);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: err.message
+        });
     }
 };
