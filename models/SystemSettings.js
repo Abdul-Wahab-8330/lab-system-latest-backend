@@ -15,6 +15,22 @@ const systemSettingsSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // ✅ NEW FIELDS FOR HISTORY RESULTS
+  historyResultsCount: {
+    type: Number,
+    default: 4,
+    min: 0,
+    max: 10,
+    validate: {
+      validator: Number.isInteger,
+      message: 'History results count must be an integer'
+    }
+  },
+  historyResultsDirection: {
+    type: String,
+    default: 'left-to-right',
+    enum: ['left-to-right', 'right-to-left']
+  },
   updatedBy: {
     type: String,
     default: 'System'

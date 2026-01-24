@@ -4,11 +4,11 @@ const SystemSettings = require('../models/SystemSettings');
 const getAllFilters = async (req, res) => {
   try {
     const filters = await SystemSettings.find();
-    
+
     // Ensure all 3 filter types exist
     const filterTypes = ['registration', 'payment', 'results'];
     const existingTypes = filters.map(f => f.filterType);
-    
+
     // Create missing filters with default values
     for (const type of filterTypes) {
       if (!existingTypes.includes(type)) {
@@ -20,7 +20,7 @@ const getAllFilters = async (req, res) => {
         });
       }
     }
-    
+
     // Fetch again after creation
     const allFilters = await SystemSettings.find();
     res.json(allFilters);
@@ -34,13 +34,13 @@ const getAllFilters = async (req, res) => {
 const getFilter = async (req, res) => {
   try {
     const { type } = req.params;
-    
+
     if (!['registration', 'payment', 'results'].includes(type)) {
       return res.status(400).json({ error: 'Invalid filter type' });
     }
-    
+
     let filter = await SystemSettings.findOne({ filterType: type });
-    
+
     // Create if doesn't exist
     if (!filter) {
       filter = await SystemSettings.create({
@@ -50,7 +50,7 @@ const getFilter = async (req, res) => {
         updatedBy: 'System'
       });
     }
-    
+
     res.json(filter);
   } catch (error) {
     console.error('Error fetching filter:', error);
@@ -134,9 +134,69 @@ const resetFilter = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getAllFilters, 
-  getFilter, 
-  setFilter, 
-  resetFilter 
+
+// ✅ NEW: Update history results settings
+const updateHistorySettings = async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { historyResultsCount, historyResultsDirection, updatedBy } = req.body;
+
+    if (!['registration', 'payment', 'results'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid filter type' });
+    }
+
+    const updateData = {
+      updatedBy: updatedBy || 'Admin',
+      updatedAt: new Date()
+    };
+
+    // Validate and add historyResultsCount if provided
+    if (historyResultsCount !== undefined) {
+      const count = parseInt(historyResultsCount);
+      if (isNaN(count) || count < 0 || count > 10) {
+        return res.status(400).json({
+          error: 'History results count must be between 0 and 10'
+        });
+      }
+      updateData.historyResultsCount = count;
+    }
+
+    // Validate and add historyResultsDirection if provided
+    if (historyResultsDirection !== undefined) {
+      if (!['left-to-right', 'right-to-left'].includes(historyResultsDirection)) {
+        return res.status(400).json({
+          error: 'Direction must be either left-to-right or right-to-left'
+        });
+      }
+      updateData.historyResultsDirection = historyResultsDirection;
+    }
+
+    const filter = await SystemSettings.findOneAndUpdate(
+      { filterType: type },
+      updateData,
+      { new: true, upsert: true }
+    );
+
+    // Emit socket event for real-time updates
+    if (global.io) {
+      global.io.emit('historySettingsUpdated', {
+        filterType: type,
+        historyResultsCount: filter.historyResultsCount,
+        historyResultsDirection: filter.historyResultsDirection
+      });
+    }
+
+    res.json(filter);
+  } catch (error) {
+    console.error('Error updating history settings:', error);
+    res.status(500).json({ error: 'Failed to update history settings' });
+  }
+};
+
+module.exports = {
+  getAllFilters,
+  getFilter,
+  setFilter,
+  resetFilter,
+  updateHistorySettings
 };

@@ -6,7 +6,8 @@ const {
   getAllFilters, 
   getFilter, 
   setFilter, 
-  resetFilter 
+  resetFilter,
+  updateHistorySettings
 } = require('../controller/systemSettingsController');
 
 // Get all filters
@@ -20,5 +21,8 @@ router.put('/:type', verifyToken, setFilter);
 
 // Reset filter
 router.delete('/:type', verifyToken, resetFilter);
+
+// ✅ NEW: Update history settings
+router.patch('/:type/history', verifyToken, updateHistorySettings);
 
 module.exports = router;
