@@ -60,6 +60,12 @@ const TestTemplateSchema = new mongoose.Schema({
     default: false
   },
 
+  // ✅ NEW: Flag for narrative/descriptive format (no table)
+  isNarrativeFormat: {
+    type: Boolean,
+    default: false
+  },
+
   // ✅ NEW: Optional narrative sections
   reportExtras: {
     type: mongoose.Schema.Types.Mixed,
