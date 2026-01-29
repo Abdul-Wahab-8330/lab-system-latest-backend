@@ -15,6 +15,8 @@ const inventoryRoutes = require("./routes/inventoryRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const systemSettingsRoutes = require('./routes/systemSettingsRoutes');
 const publicReportRoutes = require('./routes/publicReportRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+
 
 dotenv.config();
 
@@ -56,8 +58,9 @@ app.use("/api/results", resultRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use('/api/system/filters', systemSettingsRoutes);
-
 app.use('/api/public', publicReportRoutes);
+app.use('/api/reviews', reviewRoutes);
+
 
 
 mongoose.connect(process.env.MONGO_URI)

@@ -31,6 +31,21 @@ const systemSettingsSchema = new mongoose.Schema({
     default: 'left-to-right',
     enum: ['left-to-right', 'right-to-left']
   },
+
+  // ✅ NEW: Review Settings (only for 'results' filterType)
+  reviewsEnabled: {
+    type: Boolean,
+    default: true
+  },
+  reviewsRequireApproval: {
+    type: Boolean,
+    default: false // Auto-approve by default
+  },
+  reviewsShowReviewerName: {
+    type: Boolean,
+    default: true // Show name by default
+  },
+
   updatedBy: {
     type: String,
     default: 'System'
