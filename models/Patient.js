@@ -46,6 +46,11 @@ const PatientTestSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: true
+  },
+  testType: {
+    type: String,
+    enum: ["routine", "special"],
+    default: "routine"
   }
 });
 
@@ -111,6 +116,12 @@ const PatientSchema = new mongoose.Schema(
     referencedBy: {
       type: String,
       required: true
+    },
+    // Snapshot of doctor's commission % at the time of patient registration
+    // This ensures old records stay accurate even if doctor's % changes later
+    doctorCommissionSnapshot: {
+      routine: { type: Number, default: 0 },
+      special: { type: Number, default: 0 }
     },
     resultAddedBy: {
       type: String

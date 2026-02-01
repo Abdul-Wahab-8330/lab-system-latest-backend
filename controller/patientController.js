@@ -23,10 +23,10 @@ async function ensureDoctorExists(doctorName) {
       console.log(`✅ Auto-created new doctor: ${doctorName}`);
     }
 
-    return doctor.name; // Return the properly formatted name from DB
+    return doctor; // Return full doctor document for commission snapshot
   } catch (error) {
     console.error('Error ensuring doctor exists:', error);
-    return doctorName; // Return original name if error
+    return { name: doctorName }; // Return object to keep consistent shape
   }
 }
 
@@ -108,7 +108,8 @@ const createPatient = async (req, res) => {
     const testsForPatient = testsFromDb.map(t => ({
       testId: t._id,
       testName: t.testName,
-      price: t.testPrice
+      price: t.testPrice,
+      testType: t.testType || "routine" // store testType so commission calc works from patient record
     }));
 
     // total
@@ -162,6 +163,8 @@ const createPatient = async (req, res) => {
     // generate refNo
     const refNo = await generateRefNo();
     const caseNo = await generateCaseNo();
+    // Resolve doctor and grab commission snapshot before creating patient
+    const resolvedDoctor = await ensureDoctorExists(referencedBy || 'Self');
 
     const patient = new Patient({
       refNo,
@@ -176,7 +179,12 @@ const createPatient = async (req, res) => {
       specimen: specimen || 'Taken in Lab',
       paymentStatus: finalPaymentStatus,
       resultStatus: resultStatus || 'Pending',
-      referencedBy: await ensureDoctorExists(referencedBy || 'Self'),
+      referencedBy: (() => { const d = resolvedDoctor; return typeof d === 'string' ? d : d?.name || 'Self'; })(),
+      // Snapshot doctor's commission percentages at registration time
+      doctorCommissionSnapshot: {
+        routine: resolvedDoctor?.routinePercentage || 0,
+        special: resolvedDoctor?.specialPercentage || 0
+      },
       paymentStatusUpdatedBy,
       patientRegisteredBy,
       tests: testsForPatient,
@@ -187,6 +195,7 @@ const createPatient = async (req, res) => {
       paidAmount: finalPaidAmount,
       dueAmount: finalDueAmount
     });
+
 
     await patient.save();
 

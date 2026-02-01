@@ -53,6 +53,12 @@ const TestTemplateSchema = new mongoose.Schema({
     required: true,
   },
   fields: [FieldSchema],
+  testType: {
+    type: String,
+    enum: ["routine", "special"],
+    required: true,
+    default: "routine"  // existing tests will default to routine until admin updates them
+  },
 
   // ✅ NEW: Flag for diagnostic tests (ECG, X-Ray, etc.)
   isDiagnosticTest: {

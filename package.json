@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "backend": "nodemon server.js"
+    "backend": "nodemon server.js",
+    "tree": "npx tree-node-cli -I 'node_modules'"
   },
   "author": "",
   "license": "ISC",
