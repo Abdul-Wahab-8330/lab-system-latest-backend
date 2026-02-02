@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const labInfoSchema = new mongoose.Schema({
+  labID: { type: String },
   labName: { type: String, required: true },
   phoneNumber: { type: String, required: true },
   email: { type: String, required: true },
