@@ -17,6 +17,8 @@ const systemSettingsRoutes = require('./routes/systemSettingsRoutes');
 const publicReportRoutes = require('./routes/publicReportRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const doctorShareRoutes = require('./routes/doctorShareRoutes');
+const generalSettingsRoutes = require('./routes/generalSettingsRoutes');
+
 
 
 dotenv.config();
@@ -62,6 +64,7 @@ app.use('/api/system/filters', systemSettingsRoutes);
 app.use('/api/public', publicReportRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/doctor-share', doctorShareRoutes);
+app.use('/api/general-settings', generalSettingsRoutes);
 
 
 

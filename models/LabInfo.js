@@ -7,6 +7,9 @@ const labInfoSchema = new mongoose.Schema({
   email: { type: String, required: true },
   address: { type: String },
   logoUrl: { type: String }, // User gives a direct link to the logo
+  headerUrl: {type: String},
+  footerUrl: {type: String},
+  lengthyLogoUrl: { type: String },
   website: { type: String },
   description: { type: String }, // Any extra description
 }, { timestamps: true });
