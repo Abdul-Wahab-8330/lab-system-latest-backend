@@ -24,7 +24,7 @@ const getGeneralSettings = async (req, res) => {
 // Update general settings
 const updateGeneralSettings = async (req, res) => {
   try {
-    const { printShowHeader, printShowFooter, updatedBy } = req.body;
+    const { printShowHeader, printShowFooter, headerTopMargin, tableWidthMode, updatedBy } = req.body;
 
     const updateData = {
       updatedBy: updatedBy || 'Admin',
@@ -38,6 +38,27 @@ const updateGeneralSettings = async (req, res) => {
 
     if (printShowFooter !== undefined) {
       updateData.printShowFooter = printShowFooter;
+    }
+
+    // ✅ NEW: Validate and add headerTopMargin
+    if (headerTopMargin !== undefined) {
+      const margin = parseInt(headerTopMargin);
+      if (isNaN(margin) || margin < 0 || margin > 100) {
+        return res.status(400).json({
+          error: 'Header top margin must be between 0 and 100mm'
+        });
+      }
+      updateData.headerTopMargin = margin;
+    }
+
+     // ✅ NEW: Validate and add tableWidthMode
+    if (tableWidthMode !== undefined) {
+      if (!['smart', 'full'].includes(tableWidthMode)) {
+        return res.status(400).json({
+          error: 'Table width mode must be either "smart" or "full"'
+        });
+      }
+      updateData.tableWidthMode = tableWidthMode;
     }
 
     const settings = await GeneralSettings.findOneAndUpdate(

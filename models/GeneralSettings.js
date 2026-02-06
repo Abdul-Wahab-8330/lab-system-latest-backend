@@ -11,10 +11,19 @@ const generalSettingsSchema = new mongoose.Schema({
     default: true
   },
 
-  // Future settings can be added here
-  // Example: 
-  // defaultLanguage: { type: String, default: 'en' },
-  // timezone: { type: String, default: 'UTC' },
+  headerTopMargin: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100 // Reasonable max limit
+  },
+
+  // ✅ NEW: Table Width Mode
+  tableWidthMode: {
+    type: String,
+    enum: ['smart', 'full'],
+    default: 'smart' // 83% for smart, 100% for full
+  },
 
   updatedBy: {
     type: String,
