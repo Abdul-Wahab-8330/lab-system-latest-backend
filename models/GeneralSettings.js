@@ -25,6 +25,15 @@ const generalSettingsSchema = new mongoose.Schema({
     default: 'smart' // 83% for smart, 100% for full
   },
 
+  // ============================================
+  // Grouped Menu Toggle
+  // ============================================
+  // true = Categorized sidebar with "Most Used"
+  // false = Simple flat list (current)
+  enableGroupedMenu: {
+    type: Boolean,
+    default: false
+  },
   updatedBy: {
     type: String,
     default: 'System'

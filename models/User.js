@@ -19,6 +19,25 @@ const UserSchema = new mongoose.Schema({
     required: true,
     enum: ['admin', 'senior_receptionist', 'junior_receptionist', 'senior_lab_tech', 'junior_lab_tech'],
     default: "junior_receptionist"
+  },
+  // ============================================
+  // Permission System Fields
+  // ============================================
+  // Array of permission IDs user can access
+  // Auto-assigned on creation, editable by admin
+  permissions: {
+    type: [String],
+    default: []
+  },
+
+  // Tracks last permission modification
+  lastModifiedBy: {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    name: String,
+    date: Date
   }
 }, { timestamps: true });
 

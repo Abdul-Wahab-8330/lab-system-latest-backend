@@ -24,7 +24,7 @@ const getGeneralSettings = async (req, res) => {
 // Update general settings
 const updateGeneralSettings = async (req, res) => {
   try {
-    const { printShowHeader, printShowFooter, headerTopMargin, tableWidthMode, updatedBy } = req.body;
+    const { printShowHeader, printShowFooter, headerTopMargin, tableWidthMode, enableGroupedMenu, updatedBy } = req.body;
 
     const updateData = {
       updatedBy: updatedBy || 'Admin',
@@ -51,7 +51,7 @@ const updateGeneralSettings = async (req, res) => {
       updateData.headerTopMargin = margin;
     }
 
-     // ✅ NEW: Validate and add tableWidthMode
+    // ✅ NEW: Validate and add tableWidthMode
     if (tableWidthMode !== undefined) {
       if (!['smart', 'full'].includes(tableWidthMode)) {
         return res.status(400).json({
@@ -59,6 +59,11 @@ const updateGeneralSettings = async (req, res) => {
         });
       }
       updateData.tableWidthMode = tableWidthMode;
+    }
+
+    // ✅ NEW: Add enableGroupedMenu
+    if (enableGroupedMenu !== undefined) {
+      updateData.enableGroupedMenu = enableGroupedMenu;
     }
 
     const settings = await GeneralSettings.findOneAndUpdate(

@@ -3,6 +3,41 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken');
 
 
+
+
+
+// ============================================
+// HELPER: Default Permissions by Role
+// ============================================
+const getDefaultPermissions = (role) => {
+  const defaults = {
+    'admin': [
+      'dashboard', 'create-test', 'all-tests', 'create-user', 'all-users',
+      'references', 'referral-reports', 'edit-lab-info', 'finance-analytics',
+      'user-analytics', 'test-analytics', 'patient-analytics', 'inventory',
+      'expenses', 'revenue-summary', 'register-patients', 'reg-reports',
+      'payments', 'results', 'final-reports'
+    ],
+    'senior_receptionist': [
+      'dashboard', 'revenue-summary', 'expenses', 'inventory',
+      'register-patients', 'reg-reports', 'payments', 'final-reports'
+    ],
+    'junior_receptionist': [
+      'dashboard', 'register-patients', 'reg-reports', 'results', 'final-reports'
+    ],
+    'senior_lab_tech': [
+      'dashboard', 'reg-reports', 'results', 'final-reports'
+    ],
+    'junior_lab_tech': [
+      'dashboard', 'reg-reports', 'results', 'final-reports'
+    ]
+  };
+  
+  return defaults[role] || [];
+};
+
+
+
 const Register = async (req, res) => {
     try {
         const { name, userName, password, role } = req.body;
@@ -24,11 +59,16 @@ const Register = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
+
+         // ✅ AUTO-ASSIGN PERMISSIONS BASED ON ROLE
+        const defaultPermissions = getDefaultPermissions(role);
+
         const newUser = new User({
             name,
             userName,
             password: hashedPassword,
-            role
+            role,
+            permissions: defaultPermissions  
         });
         await newUser.save();
 
@@ -77,7 +117,8 @@ const Login = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 userName: user.userName,
-                role: user.role
+                role: user.role,
+                permissions: user.permissions
             }
         });
 
@@ -252,7 +293,53 @@ const resetUserPassword = async (req, res) => {
     }
 };
 
+// ============================================
+// UPDATE USER PERMISSIONS - Admin only
+// ============================================
+const updateUserPermissions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { permissions, modifiedBy } = req.body;
 
+    if (!permissions || !Array.isArray(permissions)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Permissions array is required'
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update permissions
+    user.permissions = permissions;
+    user.lastModifiedBy = {
+      userId: modifiedBy.userId,
+      name: modifiedBy.name,
+      date: new Date()
+    };
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Permissions updated successfully',
+      user
+    });
+
+  } catch (error) {
+    console.error('Error updating permissions:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Something went wrong' 
+    });
+  }
+};
 
 
 module.exports = {
@@ -261,5 +348,6 @@ module.exports = {
     getAllUsers,
     deleteUser,
     changePassword,
-    resetUserPassword
+    resetUserPassword,
+    updateUserPermissions
 };
