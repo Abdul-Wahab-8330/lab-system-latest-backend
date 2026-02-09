@@ -193,7 +193,10 @@ const createPatient = async (req, res) => {
       discountAmount,
       netTotal,
       paidAmount: finalPaidAmount,
-      dueAmount: finalDueAmount
+      dueAmount: finalDueAmount,
+      // Default: All initial payments are CASH (can be reclassified later)
+      cashAmount: finalPaidAmount,
+      bankAmount: 0
     });
 
 
@@ -305,7 +308,7 @@ const deletePatients = async (req, res) => {
 //Update payment status
 const updatePaymentStatus = async (req, res) => {
   const { id } = req.params;
-  const { paymentStatus, paymentStatusUpdatedBy, paidAmount, dueAmount } = req.body;
+  const { paymentStatus, paymentStatusUpdatedBy, paidAmount, dueAmount, cashAmount, bankAmount } = req.body;
 
   if (!paymentStatus || !paymentStatusUpdatedBy) {
     return res.status(400).json({ message: "Payment status and updater name required" });
@@ -325,6 +328,34 @@ const updatePaymentStatus = async (req, res) => {
       updateData.dueAmount = dueAmount;
     }
 
+    // ========== CASH/BANK AMOUNT HANDLING ==========
+    // If cashAmount or bankAmount provided, update them
+    // Validation: cashAmount + bankAmount should equal paidAmount
+    if (cashAmount !== undefined || bankAmount !== undefined) {
+      const finalCashAmount = cashAmount !== undefined ? cashAmount : 0;
+      const finalBankAmount = bankAmount !== undefined ? bankAmount : 0;
+      
+      // Validate: cash + bank must equal paidAmount
+      const totalPaymentMethod = finalCashAmount + finalBankAmount;
+      const expectedPaidAmount = paidAmount !== undefined ? paidAmount : (finalCashAmount + finalBankAmount);
+      
+      if (Math.abs(totalPaymentMethod - expectedPaidAmount) > 0.01) { // Allow small floating point errors
+        return res.status(400).json({ 
+          message: "Cash + Bank amounts must equal the paid amount",
+          details: {
+            cashAmount: finalCashAmount,
+            bankAmount: finalBankAmount,
+            total: totalPaymentMethod,
+            expectedPaidAmount
+          }
+        });
+      }
+
+      updateData.cashAmount = finalCashAmount;
+      updateData.bankAmount = finalBankAmount;
+    }
+    // ================================================
+
     const updatedPatient = await Patient.findByIdAndUpdate(
       id,
       updateData,
@@ -340,7 +371,9 @@ const updatePaymentStatus = async (req, res) => {
         patientName: updatedPatient.name,
         paymentStatus: updatedPatient.paymentStatus,
         paidAmount: updatedPatient.paidAmount,
-        dueAmount: updatedPatient.dueAmount
+        dueAmount: updatedPatient.dueAmount,
+        cashAmount: updatedPatient.cashAmount,
+        bankAmount: updatedPatient.bankAmount
       });
     }
 

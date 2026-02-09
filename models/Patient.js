@@ -161,7 +161,17 @@ const PatientSchema = new mongoose.Schema(
     dueAmount: {
       type: Number,
       default: 0
+    },
+    // ========== PAYMENT METHOD TRACKING (Cash vs Bank) ==========
+    cashAmount: {
+      type: Number,
+      default: 0
+    },
+    bankAmount: {
+      type: Number,
+      default: 0
     }
+    // ============================================================
   },
   {
     timestamps: true
